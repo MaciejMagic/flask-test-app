@@ -122,7 +122,8 @@ def buy():
             return apology("Must provide a positive number")
 
         # Fetch user info from database
-        user = db.execute("SELECT * FROM users WHERE id = ?", session["user_id"])
+        user = db.execute("SELECT * FROM users WHERE id = ?",
+                          session["user_id"])
         userCash = user[0]["cash"]
 
         # Calculate amount of funds needed
@@ -356,7 +357,8 @@ def sell():
         currentStockPrice = sellStock["price"]
 
         # Fetch current user account cash balance
-        user = db.execute("SELECT * FROM users WHERE id = ?", session["user_id"])
+        user = db.execute("SELECT * FROM users WHERE id = ?",
+                          session["user_id"])
         userCash = user[0]["cash"]
 
         # Calculate amount of cash for sold shares
