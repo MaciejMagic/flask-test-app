@@ -1,8 +1,8 @@
 import os
-import requests
 import urllib.parse
-from flask import redirect, render_template, request, session
 from functools import wraps
+import requests
+from flask import redirect, render_template, request, session
 
 
 def apology(message, code=400):
@@ -10,7 +10,7 @@ def apology(message, code=400):
     def escape(s):
         """
         Escape special characters.
-        
+
         https://github.com/jacebrowning/memegen#special-characters
         """
         for old, new in [("-", "--"), (" ", "-"), ("_", "__"), ("?", "~q"),
@@ -41,7 +41,7 @@ def lookup(symbol):
     try:
         api_key = os.environ.get("API_KEY")
         url = f"https://cloud.iexapis.com/stable/stock/{urllib.parse.quote_plus(symbol)}/quote?token={api_key}"
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
     except requests.RequestException:
         return None

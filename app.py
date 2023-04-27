@@ -1,10 +1,10 @@
 import os
-import datetime
 import re
+import datetime
 import sqlite3
 from flask import Flask, flash, redirect, render_template, request, session
+# from tempfile import mkdtemp
 from flask_session import Session
-from tempfile import mkdtemp
 from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required, lookup, usd
 
@@ -52,40 +52,40 @@ def index():
                                   GROUP BY symbol
                                   ORDER BY share DESC""",
                                session["user_id"])
-    except:
+    except sqlite3.Error:
         portfolio = []
 
     # Initialize list of user current stocks (dicts)
-    currentStocks = []
+    current_stocks = []
 
-    # Populate the currentStocks list with user stocks (with latest prices)
+    # Populate the current_stocks list with user stocks (with latest prices)
     for stock in range(len(portfolio)):
 
         # For each company (stock) lookup() creates a dict
         # with keys: "name", "price", "symbol"
-        currentStocks.append(lookup(portfolio[stock]["symbol"]))
+        current_stocks.append(lookup(portfolio[stock]["symbol"]))
 
         # Adding "shares" key to those dicts
-        currentStocks[stock]["shares"] = portfolio[stock]["shares"]
+        current_stocks[stock]["shares"] = portfolio[stock]["shares"]
 
     # Fetch current user cash
-    userCash = db.execute("SELECT username, cash FROM users WHERE id = ?",
-                          session["user_id"])
-    cash = userCash[0]["cash"]
+    user_cash = db.execute("SELECT username, cash FROM users WHERE id = ?",
+                           session["user_id"])
+    cash = user_cash[0]["cash"]
 
     # Calculate sum of user account cash and all shares worth
-    sharesWorth = 0
+    shares_worth = 0
 
-    for stockNew in range(len(currentStocks)):
-        sharesWorth += (float(currentStocks[stockNew]["price"])
-                        * int(currentStocks[stockNew]["shares"]))
+    for stock_new in range(len(current_stocks)):
+        shares_worth += (float(current_stocks[stock_new]["price"])
+                         * int(current_stocks[stock_new]["shares"]))
 
-    userTotal = cash + sharesWorth
+    user_total = cash + shares_worth
 
     return render_template("index.html",
-                           currentStocks=currentStocks,
+                           current_stocks=current_stocks,
                            cash=cash,
-                           userTotal=userTotal)
+                           user_total=user_total)
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -97,60 +97,60 @@ def buy():
 
         # Require that a user input a stocks symbol,
         # implemented as a text field whose name is symbol
-        buySymbol = request.form.get("symbol")
-        buyStock = lookup(buySymbol)
+        buy_symbol = request.form.get("symbol")
+        buy_stock = lookup(buy_symbol)
 
         # Render an apology if the input is blank or the symbol does not exist
-        if not buySymbol:
+        if not buy_symbol:
             return apology("Must provide a stock symbol")
 
-        if buyStock == None:
+        if buy_stock is None:
             return apology("Symbol provided is not a valid stock")
 
         # Require that a user input a number of shares,
         # implemented as a field whose name is shares
-        nrOfShares = request.form.get("shares")
+        nr_of_shares = request.form.get("shares")
 
-        if not nrOfShares.isnumeric():
+        if not nr_of_shares.isnumeric():
             return apology("Must provide a non-partial, positive number")
 
-        if not nrOfShares.isdigit():
+        if not nr_of_shares.isdigit():
             return apology("Must provide a non-partial, positive number")
 
         # Render an apology if the input is not a positive integer
-        if int(nrOfShares) < 1:
+        if int(nr_of_shares) < 1:
             return apology("Must provide a positive number")
 
         # Fetch user info from database
         user = db.execute("SELECT * FROM users WHERE id = ?",
                           session["user_id"])
-        userCash = user[0]["cash"]
+        user_cash = user[0]["cash"]
 
         # Calculate amount of funds needed
-        stockPrice = buyStock["price"]
-        sharesToBuyTotal = int(nrOfShares) * stockPrice
+        stock_price = buy_stock["price"]
+        shares_to_buy_total = int(nr_of_shares) * stock_price
 
         # Render an apology, without completing a purchase,
         # if the user cannot afford the number of shares at the current price
-        if sharesToBuyTotal > userCash:
+        if shares_to_buy_total > user_cash:
             return apology("You do not have funds for this purchase")
 
         # Substract cash spent from user account
-        userCashNew = userCash - sharesToBuyTotal
+        user_cash_new = user_cash - shares_to_buy_total
         db.execute("UPDATE users SET cash = ? WHERE id = ?",
-                   userCashNew, session["user_id"])
+                   user_cash_new, session["user_id"])
 
         # Update shares table with new purchase
         timestamp = datetime.datetime.now()
         db.execute("""INSERT INTO shares
                       (user_id, symbol, share, price, time)
                       VALUES (?, ?, ?, ?, ?)""",
-                   session["user_id"], buySymbol, nrOfShares,
-                   stockPrice, timestamp)
+                   session["user_id"], buy_symbol, nr_of_shares,
+                   stock_price, timestamp)
 
-        flash("Purchased {} {} stock for ${}".format(nrOfShares,
-                                                     buyStock["name"],
-                                                     sharesToBuyTotal))
+        flash("Purchased {} {} stock for ${}".format(nr_of_shares,
+                                                     buy_stock["name"],
+                                                     shares_to_buy_total))
 
         # Upon completion, redirect the user to the home page
         return redirect("/")
@@ -237,15 +237,15 @@ def quote():
             return apology("Must provide stock symbol")
 
         # Require that the symbol provided is valid
-        quoteResponse = lookup(symbol)
+        quote_response = lookup(symbol)
 
-        if quoteResponse == None:
+        if quote_response is None:
             return apology("Must provide a valid stock symbol")
 
         return render_template("quoted.html",
-                               name=quoteResponse["name"],
-                               symbol=quoteResponse["symbol"],
-                               price=quoteResponse["price"])
+                               name=quote_response["name"],
+                               symbol=quote_response["symbol"],
+                               price=quote_response["price"])
 
     return render_template("quote.html")
 
@@ -278,9 +278,9 @@ def register():
             return apology("Must provide a matching password in both boxes")
 
         # Validate password for minimum number of character types used
-        rePattern = "^(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$"
-        validation = re.match(rePattern, password)
-        if validation == None:
+        re_pattern = "^(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$"
+        validation = re.match(re_pattern, password)
+        if validation is None:
             return apology("""Provide a password with a min number of 8
                               characters and one special, one numeric, one
                               uppercase and one lowercase letter characters""")
@@ -290,19 +290,19 @@ def register():
             return apology("Passwords do not match")
 
         # Hash the users password with generate_password_hash
-        passwordHash = generate_password_hash(password)
+        password_hash = generate_password_hash(password)
 
         # Add new user, storing a hash, not the password itself
         try:
-            userId = db.execute("""INSERT INTO users (username, hash)
+            user_id = db.execute("""INSERT INTO users (username, hash)
                                    VALUES(?, ?)""",
-                                username, passwordHash)
-        except:
+                                 username, password_hash)
+        except sqlite3.Error:
             # Render an apology if the user username input already exists
             return apology("That username is already taken")
 
         # Log user in
-        session["user_id"] = userId
+        session["user_id"] = user_id
 
         flash("Registered!")
 
@@ -319,75 +319,75 @@ def sell():
     if request.method == "POST":
 
         # Require that a user input a stocks symbol
-        sellSymbol = request.form.get("symbol")
-        sellStock = lookup(sellSymbol)
+        sell_symbol = request.form.get("symbol")
+        sell_stock = lookup(sell_symbol)
 
-        sellUserShares = int(request.form.get("shares"))
+        sell_user_shares = int(request.form.get("shares"))
 
         # Render an apology if user didnt select any stock from the list
-        if not sellSymbol or sellSymbol == "Symbol":
+        if not sell_symbol or sell_symbol == "Symbol":
             return apology("Must choose a stock owned")
 
-        if sellStock == None:
+        if sell_stock is None:
             return apology("Must choose a valid stock owned")
 
         # Fetch user info of shares of the stock provided
-        userShares = db.execute("""SELECT SUM(share) AS shares
+        user_shares = db.execute("""SELECT SUM(share) AS shares
                                    FROM shares
                                    WHERE user_id = ? AND symbol = ?
                                    GROUP BY symbol""",
-                                session["user_id"], sellSymbol)
+                                 session["user_id"], sell_symbol)
 
-        userSharesNr = int(userShares[0]["shares"])
+        user_shares_nr = int(user_shares[0]["shares"])
 
         # Render an apology if user does not have any shares of the provided stock
-        if userSharesNr < 1:
+        if user_shares_nr < 1:
             return apology("You do not own any shares of that stock")
 
         # Render an apology if the input is not a positive integer
-        if sellUserShares < 0:
+        if sell_user_shares < 0:
             return apology("Must provide a positive number")
 
         # Render an apology if user does not own that many shares
-        if sellUserShares > userSharesNr:
+        if sell_user_shares > user_shares_nr:
             return apology("""Must provide a number less than or equal
                               to the shares that you own""")
 
         # Fetch latest stock price
-        currentStockPrice = sellStock["price"]
+        currentstock_price = sell_stock["price"]
 
         # Fetch current user account cash balance
         user = db.execute("SELECT * FROM users WHERE id = ?",
                           session["user_id"])
-        userCash = user[0]["cash"]
+        user_cash = user[0]["cash"]
 
         # Calculate amount of cash for sold shares
-        profit = currentStockPrice * sellUserShares
-        userCashNew = userCash + profit
-        soldUserShares = sellUserShares - 2 * sellUserShares
+        profit = currentstock_price * sell_user_shares
+        user_cash_new = user_cash + profit
+        solduser_shares = sell_user_shares - 2 * sell_user_shares
 
         # Substract shares from portfolio
         # (add entry with negative shares amount to shares table)
         time = datetime.datetime.now()
         db.execute("""INSERT INTO shares (user_id, symbol, share, price, time)
                       VALUES (?, ?, ?, ?, ?)""",
-                   session["user_id"], sellSymbol, soldUserShares,
-                   currentStockPrice, time)
+                   session["user_id"], sell_symbol, solduser_shares,
+                   currentstock_price, time)
 
         # Add cash from sale to user account
         db.execute("UPDATE users SET cash = ? WHERE id = ?",
-                   round(userCashNew, 2), session["user_id"])
+                   round(user_cash_new, 2), session["user_id"])
 
         flash("Stock sold!")
 
         return redirect("/")
 
     # Retrieve a [list] of user shares of [dicts] stocks
-    userStocks = db.execute("""SELECT symbol
+    user_stocks = db.execute("""SELECT symbol
                                FROM shares
                                WHERE user_id = ?
                                GROUP BY symbol
                                HAVING SUM(share) > 0""",
-                            session["user_id"])
+                             session["user_id"])
 
-    return render_template("sell.html", userStocks=userStocks)
+    return render_template("sell.html", user_stocks=user_stocks)
