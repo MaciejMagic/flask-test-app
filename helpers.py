@@ -1,11 +1,12 @@
 import os
 import urllib.parse
 from functools import wraps
+from typing import Union, Any
 import requests
 from flask import redirect, render_template, request, session
 
 
-def apology(message, code=400):
+def apology(message: str, code: int = 400) -> Union[render_template, int]:
     """Render message as an apology to user."""
     def escape(s):
         """
@@ -34,7 +35,7 @@ def login_required(f):
     return decorated_function
 
 
-def lookup(symbol):
+def lookup(symbol: str) -> (dict[str, Any] | None):
     """Look up quote for symbol."""
 
     # Contact API
@@ -58,6 +59,6 @@ def lookup(symbol):
         return None
 
 
-def usd(value):
+def usd(value) -> str:
     """Format value as USD."""
     return f"${value:,.2f}"

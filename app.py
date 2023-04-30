@@ -44,7 +44,7 @@ def after_request(response):
 def index():
     """Show portfolio of stocks"""
 
-    # Extract total of user shares for each stock from db (list of dicts)
+    # Extract total shares for each stock from database (as list of dicts)
     try:
         portfolio = db.execute("""SELECT symbol, SUM(share) AS shares
                                   FROM shares
@@ -58,15 +58,15 @@ def index():
     # Initialize list of user current stocks (dicts)
     current_stocks = []
 
-    # Populate the current_stocks list with user stocks (with latest prices)
-    for stock in range(len(portfolio)):
+    # Populate the current_stocks list with user stocks + latest prices
+    for stock in portfolio:
 
-        # For each company (stock) lookup() creates a dict
+        # For each company stock, lookup() creates a dict
         # with keys: "name", "price", "symbol"
-        current_stocks.append(lookup(portfolio[stock]["symbol"]))
+        current_stocks.append(lookup(stock["symbol"]))
 
         # Adding "shares" key to those dicts
-        current_stocks[stock]["shares"] = portfolio[stock]["shares"]
+        current_stocks[stock]["shares"] = stock["shares"]
 
     # Fetch current user cash
     user_cash = db.execute("SELECT username, cash FROM users WHERE id = ?",
@@ -76,7 +76,7 @@ def index():
     # Calculate sum of user account cash and all shares worth
     shares_worth = 0
 
-    for stock_new in range(len(current_stocks)):
+    for stock_new in current_stocks:
         shares_worth += (float(current_stocks[stock_new]["price"])
                          * int(current_stocks[stock_new]["shares"]))
 
