@@ -8,6 +8,7 @@ from flask import redirect, render_template, request, session
 
 def apology(message: str, code: int = 400) -> Union[render_template, int]:
     """Render message as an apology to user."""
+
     def escape(s):
         """
         Escape special characters.
@@ -27,6 +28,7 @@ def login_required(f):
 
     https://flask.palletsprojects.com/en/1.1.x/patterns/viewdecorators/
     """
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if session.get("user_id") is None:
@@ -61,4 +63,5 @@ def lookup(symbol: str) -> (dict[str, Any] | None):
 
 def usd(value) -> str:
     """Format value as USD."""
+
     return f"${value:,.2f}"

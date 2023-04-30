@@ -148,9 +148,9 @@ def buy():
                    session["user_id"], buy_symbol, nr_of_shares,
                    stock_price, timestamp)
 
-        flash("Purchased {} {} stock for ${}".format(nr_of_shares,
-                                                     buy_stock["name"],
-                                                     shares_to_buy_total))
+        # Site UI feedback
+        flash(
+            f"Purchased {nr_of_shares} {buy_stock['name']} stock for ${shares_to_buy_total}")
 
         # Upon completion, redirect the user to the home page
         return redirect("/")
@@ -163,14 +163,14 @@ def buy():
 def history():
     """Show history of transactions"""
 
-    # Query db for list of user transactions
-    history = db.execute("""SELECT symbol, share, price, time
+    # Query databse for list of user transactions
+    history_from_db = db.execute("""SELECT symbol, share, price, time
                             FROM shares
                             WHERE user_id = ?
                             ORDER BY time DESC""",
-                         session["user_id"])
+                                 session["user_id"])
 
-    return render_template("history.html", history=history)
+    return render_template("history.html", history=history_from_db)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -188,7 +188,7 @@ def login():
             return apology("Must provide username", 403)
 
         # Ensure password was submitted
-        elif not request.form.get("password"):
+        if not request.form.get("password"):
             return apology("Must provide password", 403)
 
         # Query database for username
@@ -208,8 +208,7 @@ def login():
         return redirect("/")
 
     # User reached route via GET (as by clicking a link or via redirect)
-    else:
-        return render_template("login.html")
+    return render_template("login.html")
 
 
 @app.route("/logout")
@@ -304,6 +303,7 @@ def register():
         # Log user in
         session["user_id"] = user_id
 
+        # Site UI feedback
         flash("Registered!")
 
         return redirect("/")
@@ -364,20 +364,21 @@ def sell():
         # Calculate amount of cash for sold shares
         profit = currentstock_price * sell_user_shares
         user_cash_new = user_cash + profit
-        solduser_shares = sell_user_shares - 2 * sell_user_shares
+        sold_user_shares = sell_user_shares - 2 * sell_user_shares
 
         # Substract shares from portfolio
         # (add entry with negative shares amount to shares table)
         time = datetime.datetime.now()
         db.execute("""INSERT INTO shares (user_id, symbol, share, price, time)
                       VALUES (?, ?, ?, ?, ?)""",
-                   session["user_id"], sell_symbol, solduser_shares,
+                   session["user_id"], sell_symbol, sold_user_shares,
                    currentstock_price, time)
 
         # Add cash from sale to user account
         db.execute("UPDATE users SET cash = ? WHERE id = ?",
                    round(user_cash_new, 2), session["user_id"])
 
+        # Site UI feedback
         flash("Stock sold!")
 
         return redirect("/")
