@@ -1,4 +1,4 @@
-Flask==2.3.2
-Flask_Session==0.4.0
-Requests==2.29.0
-Werkzeug==2.3.0
+Flask>=2.3.2
+Flask_Session>=0.4.0
+Requests>=2.29.0
+Werkzeug>=2.3.0

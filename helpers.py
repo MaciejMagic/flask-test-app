@@ -3,7 +3,7 @@ import urllib.parse
 from functools import wraps
 from typing import Union, Any
 import requests
-from flask import redirect, render_template, request, session
+from flask import redirect, render_template, session
 
 
 def apology(message: str, code: int = 400) -> Union[render_template, int]:
