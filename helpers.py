@@ -1,7 +1,8 @@
 import os
 import urllib.parse
 from functools import wraps
-from typing import Union, Any
+from typing import Any, Union
+
 import requests
 from flask import redirect, render_template, session
 
@@ -9,7 +10,7 @@ from flask import redirect, render_template, session
 def apology(message: str, code: int = 400) -> Union[render_template, int]:
     """Render message as an apology to user."""
 
-    def escape(s):
+    def escape(special):
         """
         Escape special characters.
 
@@ -17,30 +18,29 @@ def apology(message: str, code: int = 400) -> Union[render_template, int]:
         """
         for old, new in [("-", "--"), (" ", "-"), ("_", "__"), ("?", "~q"),
                          ("%", "~p"), ("#", "~h"), ("/", "~s"), ("\"", "''")]:
-            s = s.replace(old, new)
-        return s
+            special = special.replace(old, new)
+        return special
     return render_template("apology.html", top=code, bottom=escape(message)), code
 
 
-def login_required(f):
+def login_required(function):
     """
     Decorate routes to require login.
 
     https://flask.palletsprojects.com/en/1.1.x/patterns/viewdecorators/
     """
 
-    @wraps(f)
+    @wraps(function)
     def decorated_function(*args, **kwargs):
         if session.get("user_id") is None:
             return redirect("/login")
-        return f(*args, **kwargs)
+        return function(*args, **kwargs)
     return decorated_function
 
 
 def lookup(symbol: str) -> (dict[str, Any] | None):
     """Look up quote for symbol."""
 
-    # Contact API
     try:
         api_key = os.environ.get("API_KEY")
         url = f"https://cloud.iexapis.com/stable/stock/{urllib.parse.quote_plus(symbol)}/quote?token={api_key}"
