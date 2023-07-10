@@ -131,3 +131,5 @@ dmypy.json
 # Custom stuff
 db/
 .db
+.DS_Store
+flask_session/
